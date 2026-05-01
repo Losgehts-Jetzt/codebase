@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { useAuth } from '../context/AuthContext'
 
 const modules = [
   {
@@ -30,6 +31,8 @@ const modules = [
 
 export default function Home() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const name = user?.displayName ?? user?.email?.split('@')[0] ?? 'du'
 
   return (
     <div className="min-h-svh bg-gradient-to-b from-sky-100 to-indigo-100 flex flex-col items-center justify-center p-6 gap-8">
@@ -39,7 +42,7 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        Hallo, Aarohi! 👋
+        Hallo, {name}! 👋
       </motion.h1>
 
       <div className="flex flex-col gap-5 w-full max-w-sm">
