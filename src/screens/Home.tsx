@@ -31,11 +31,17 @@ const modules = [
 
 export default function Home() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const name = user?.displayName ?? user?.email?.split('@')[0] ?? 'du'
 
   return (
     <div className="min-h-svh bg-gradient-to-b from-sky-100 to-indigo-100 flex flex-col items-center justify-center p-6 gap-8">
+      <button
+        onClick={logout}
+        className="fixed top-5 right-5 text-xs font-semibold text-indigo-400 active:text-indigo-600 bg-white/70 rounded-full px-3 py-1.5 shadow-sm"
+      >
+        Abmelden
+      </button>
       <motion.h1
         className="text-4xl font-bold text-indigo-700 tracking-tight"
         initial={{ opacity: 0, y: -20 }}
