@@ -1,23 +1,27 @@
 import { useRef, useEffect, useCallback } from 'react'
 
 interface DrawingCanvasProps {
-  /** Increment this value to clear the canvas (avoids exposing an imperative ref) */
+  /** Increment to clear the canvas without remounting */
   clearSignal: number
+  /** Applied to the wrapper div — controls visual size, border, background */
   className?: string
 }
 
 export function DrawingCanvas({ clearSignal, className }: DrawingCanvasProps) {
+  const wrapperRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawing = useRef(false)
   const lastPos = useRef<{ x: number; y: number } | null>(null)
 
-  // Scale canvas backing store to device pixel ratio and track resizes
+  // Scale backing store to DPR — observe the WRAPPER div, not the canvas,
+  // so setting canvas.width/height never triggers a feedback loop.
   useEffect(() => {
+    const wrapper = wrapperRef.current
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!wrapper || !canvas) return
 
-    const resize = () => {
-      const { width, height } = canvas.getBoundingClientRect()
+    const sync = () => {
+      const { width, height } = wrapper.getBoundingClientRect()
       if (width === 0 || height === 0) return
       const dpr = window.devicePixelRatio || 1
       canvas.width = Math.round(width * dpr)
@@ -26,50 +30,46 @@ export function DrawingCanvas({ clearSignal, className }: DrawingCanvasProps) {
       ctx?.scale(dpr, dpr)
     }
 
-    resize()
-    const ro = new ResizeObserver(resize)
-    ro.observe(canvas)
+    sync()
+    const ro = new ResizeObserver(sync)
+    ro.observe(wrapper)
     return () => ro.disconnect()
   }, [])
 
-  // Clear when clearSignal increments
+  // Clear on demand
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height)
   }, [clearSignal])
 
-  const getPos = (e: React.PointerEvent<HTMLCanvasElement>) => {
+  // Pointer position relative to canvas in CSS pixels
+  const getPos = (e: React.PointerEvent) => {
     const rect = canvasRef.current!.getBoundingClientRect()
     return { x: e.clientX - rect.left, y: e.clientY - rect.top }
   }
 
-  const onPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault()
     canvasRef.current!.setPointerCapture(e.pointerId)
     drawing.current = true
     lastPos.current = getPos(e)
   }, [])
 
-  const onPointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!drawing.current || !lastPos.current) return
     e.preventDefault()
     const ctx = canvasRef.current?.getContext('2d')
     if (!ctx) return
-
     const pos = getPos(e)
     ctx.beginPath()
     ctx.moveTo(lastPos.current.x, lastPos.current.y)
     ctx.lineTo(pos.x, pos.y)
-    // Apple Pencil (pointerType 'pen') gets a finer stroke than finger
     ctx.lineWidth = e.pointerType === 'pen' ? 2.5 : 5
-    ctx.strokeStyle = '#1e1b4b' // indigo-950
+    ctx.strokeStyle = '#1e1b4b'
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
     ctx.stroke()
-
     lastPos.current = pos
   }, [])
 
@@ -79,14 +79,17 @@ export function DrawingCanvas({ clearSignal, className }: DrawingCanvasProps) {
   }, [])
 
   return (
-    <canvas
-      ref={canvasRef}
-      className={className}
-      style={{ touchAction: 'none' }}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
-    />
+    // Wrapper owns the visual dimensions — canvas fills it absolutely
+    <div ref={wrapperRef} className={`relative ${className ?? ''}`}>
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full block"
+        style={{ touchAction: 'none' }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      />
+    </div>
   )
 }

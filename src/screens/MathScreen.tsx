@@ -524,11 +524,11 @@ export default function MathScreen() {
               </span>
             </div>
 
-            {/* Problem display — shows live inputValue inline in the blank */}
+            {/* Problem display — live inputValue appears inline at the blank */}
             <div className="px-5 flex-shrink-0">
               <motion.div
                 key={questionIndex}
-                className="w-full bg-white rounded-3xl shadow-lg py-6 px-4 flex items-center justify-center"
+                className="w-full bg-white rounded-3xl shadow-lg py-4 px-4 flex flex-col items-center justify-center gap-1"
                 initial={{ opacity: 0, scale: 0.93 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 24 }}
@@ -547,31 +547,37 @@ export default function MathScreen() {
                     ),
                   )}
                 </p>
-                {/* Wrong: show correct answer */}
-                {answerState === 'wrong' && (
-                  <p className="absolute text-sm text-green-600 font-semibold mt-2">
-                    {t('Richtig wäre', 'Answer')}: {fillinItems[questionIndex].answer}
-                  </p>
-                )}
+                {/* Wrong: correct answer shown below the equation */}
+                <AnimatePresence>
+                  {answerState === 'wrong' && (
+                    <motion.p
+                      className="text-sm text-green-600 font-semibold"
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      {t('Richtig wäre', 'Answer')}: {fillinItems[questionIndex].answer}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
               </motion.div>
             </div>
 
-            {/* Drawing canvas */}
-            <div className="px-5 pt-3 flex-shrink-0 relative">
+            {/* Drawing canvas — wrapper div owns the height, canvas fills it */}
+            <div className="px-5 pt-2 flex-shrink-0 relative">
               <DrawingCanvas
                 clearSignal={clearSignal}
-                className="w-full h-[160px] rounded-2xl bg-white/80 border-2 border-dashed border-indigo-300"
+                className="w-full h-[110px] rounded-2xl bg-white/80 border-2 border-dashed border-indigo-300"
               />
               <button
                 onClick={() => setClearSignal(s => s + 1)}
-                className="absolute top-5 right-7 text-xs text-gray-400 bg-white border border-gray-200 rounded-lg px-2 py-1 min-h-[32px]"
+                className="absolute top-4 right-7 text-xs text-gray-400 bg-white border border-gray-200 rounded-lg px-2 py-1 min-h-[28px]"
               >
                 ✕ {t('Löschen', 'Clear')}
               </button>
             </div>
 
-            {/* Number pad + submit */}
-            <div className="flex-1 flex flex-col justify-end px-5 pb-4 gap-3 min-h-0">
+            {/* Number pad + submit — flex-1 so it fills remaining space, no justify-end overflow */}
+            <div className="flex-1 flex flex-col px-5 pb-3 pt-2 gap-2 min-h-0">
               <NumberPad
                 disabled={answerState !== 'idle'}
                 onDigit={d => setInputValue(v => (v.length >= 4 ? v : v + d))}
@@ -581,18 +587,18 @@ export default function MathScreen() {
               <button
                 onClick={handleFillinSubmit}
                 disabled={answerState !== 'idle' || inputValue === ''}
-                className="w-full min-h-[56px] rounded-2xl bg-indigo-600 text-white text-xl font-bold active:scale-95 transition-transform disabled:opacity-40"
+                className="w-full min-h-[52px] rounded-2xl bg-indigo-600 text-white text-xl font-bold active:scale-95 transition-transform disabled:opacity-40 flex-shrink-0"
               >
                 {t('Prüfen', 'Check')}
               </button>
 
               {/* Hint */}
-              <div className="flex flex-col items-center gap-1">
+              <div className="flex flex-col items-center gap-1 flex-shrink-0">
                 <AnimatePresence mode="wait">
                   {hintIndex !== null && (
                     <motion.div
                       key={hintIndex}
-                      className="w-full bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2.5 text-amber-800 text-sm font-medium text-center"
+                      className="w-full bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2 text-amber-800 text-sm font-medium text-center"
                       initial={{ opacity: 0, y: -6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -6 }}
@@ -607,7 +613,7 @@ export default function MathScreen() {
                       prev === null ? 0 : (prev + 1) % topic.hints.length,
                     )
                   }
-                  className="text-indigo-400 text-sm font-medium min-h-[44px] px-4 active:text-indigo-700"
+                  className="text-indigo-400 text-sm font-medium min-h-[40px] px-4 active:text-indigo-700"
                 >
                   {t('💡 Tipp', '💡 Hint')}
                   {hintIndex !== null && (
